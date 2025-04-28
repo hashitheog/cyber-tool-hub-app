@@ -24,6 +24,12 @@ interface GeoLocation {
   org: string;
   postal: string;
   timezone: string;
+  latitude?: string;
+  longitude?: string;
+  country_code?: string;
+  country_name?: string;
+  region_name?: string;
+  isp?: string;
 }
 
 const IPGeolocator = () => {
@@ -41,22 +47,42 @@ const IPGeolocator = () => {
     setLoading(true);
     
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const options = {
+        method: 'GET',
+        headers: {
+          'x-rapidapi-key': 'cf23166029mshf289eb37458e7b1p19c655jsn95f754264828',
+          'x-rapidapi-host': 'ip-geo-location10.p.rapidapi.com'
+        }
+      };
+
+      const response = await fetch(`https://ip-geo-location10.p.rapidapi.com/ip?ip=${values.ip}`, options);
       
-      // Mock data for demo purposes
-      const mockResult: GeoLocation = {
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      
+      // Transform API response to match our GeoLocation interface
+      const geoData: GeoLocation = {
         ip: values.ip,
-        city: "San Francisco",
-        region: "California",
-        country: "US",
-        loc: "37.7749,-122.4194",
-        org: "AS14618 Amazon.com, Inc.",
-        postal: "94107",
-        timezone: "America/Los_Angeles",
+        city: data.city || 'Unknown',
+        region: data.region_name || data.region || 'Unknown',
+        country: data.country_name || data.country || 'Unknown',
+        loc: data.latitude && data.longitude ? `${data.latitude},${data.longitude}` : 'Unknown',
+        org: data.isp || data.org || 'Unknown',
+        postal: data.postal || 'Unknown',
+        timezone: data.timezone || 'Unknown',
+        // Store additional fields
+        latitude: data.latitude,
+        longitude: data.longitude,
+        country_code: data.country_code,
+        country_name: data.country_name,
+        region_name: data.region_name,
+        isp: data.isp
       };
       
-      setResult(mockResult);
+      setResult(geoData);
       toast.success("IP geolocation completed successfully!");
     } catch (error) {
       console.error("IP geolocation error:", error);
@@ -139,9 +165,15 @@ const IPGeolocator = () => {
                   <p className="text-cyber-foreground font-medium">{result.loc}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-cyber-foreground/70">Organization</p>
+                  <p className="text-sm text-cyber-foreground/70">ISP/Organization</p>
                   <p className="text-cyber-foreground font-medium">{result.org}</p>
                 </div>
+                {result.country_code && (
+                  <div>
+                    <p className="text-sm text-cyber-foreground/70">Country Code</p>
+                    <p className="text-cyber-foreground font-medium">{result.country_code}</p>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
